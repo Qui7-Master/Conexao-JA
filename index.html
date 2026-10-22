@@ -6,10 +6,10 @@
   <title>Quiz Master Pro</title>
 
   <!-- ==================================================================== -->
-  <!-- ⚙️ CONFIGURAÇÃO DA API: COLE SUA URL DO GOOGLE APPS SCRIPT (/exec) -->
+  <!-- ⚙️ CONFIGURE AQUI SUA URL DO GOOGLE APPS SCRIPT (/exec) -->
   <!-- ==================================================================== -->
   <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec"; // Cole aqui a URL do Passo 1
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec"; // Cole sua URL /exec aqui
   </script>
 
   <!-- Tailwind CSS via CDN -->
@@ -451,6 +451,7 @@
           </button>
         </div>
 
+        <!-- Módulo IA Gemini -->
         <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800/80 p-6 rounded-3xl border border-indigo-100 dark:border-slate-800 shadow-xs space-y-3">
           <div class="flex items-center space-x-2">
             <span class="text-lg">✨</span>
@@ -492,7 +493,12 @@
       <!-- ABA 4: USUÁRIOS -->
       <div id="adm-content-usuarios" class="hidden space-y-5">
         <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
-          <h3 class="text-sm font-extrabold mb-4">Usuários Inscritos</h3>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Usuários Inscritos</h3>
+              <p class="text-xs text-slate-400">Edite dados, altere senhas ou gerencie contas</p>
+            </div>
+          </div>
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-left">
               <thead>
