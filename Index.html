@@ -5,13 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Quiz Master Pro</title>
 
-  <!-- ==================================================================== -->
-  <!-- ⚙️ CONFIGURE AQUI SUA URL DO GOOGLE APPS SCRIPT (/exec) -->
-  <!-- ==================================================================== -->
-  <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec"; // <-- COLE SUA URL /exec AQUI
-  </script>
-
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -160,16 +153,16 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Telefone</label>
-              <input type="text" id="reg-tel" placeholder="(00) 00000-0000" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+              <input type="text" id="reg-tel" placeholder="(00) 00000-0000" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Igreja / Grupo</label>
-              <input type="text" id="reg-igreja" placeholder="Unidade" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+              <input type="text" id="reg-igreja" placeholder="Unidade" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
             </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Crie sua Senha</label>
-            <input type="password" id="reg-senha" required placeholder="Mínimo 6 dígitos" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+            <input type="password" id="reg-senha" required placeholder="Mínimo 6 dígitos" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
           </div>
           <button type="submit" id="btn-reg-submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition flex items-center justify-center">
             <span id="btn-reg-text">Cadastrar e Participar</span>
@@ -451,7 +444,6 @@
           </button>
         </div>
 
-        <!-- Módulo IA Gemini -->
         <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800/80 p-6 rounded-3xl border border-indigo-100 dark:border-slate-800 shadow-xs space-y-3">
           <div class="flex items-center space-x-2">
             <span class="text-lg">✨</span>
@@ -951,7 +943,7 @@
       </div>
     </div>
 
-    <!-- MODAL 8: EDITAR CONCURSO (COM TIMER CONFIGURÁVEL) -->
+    <!-- MODAL 8: EDITAR CONCURSO -->
     <div id="modal-editar-concurso" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -1012,6 +1004,7 @@
 
   </main>
 
+  <!-- Script Principal Externalizado (Motor de Execução) -->
   <script src="app.js"></script>
 </body>
 </html>
