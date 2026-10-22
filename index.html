@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Quiz Master Pro</title>
+
+  <!-- ==================================================================== -->
+  <!-- ⚙️ CONFIGURAÇÃO DA API: COLE SUA URL DO GOOGLE APPS SCRIPT (/exec) -->
+  <!-- ==================================================================== -->
+  <script>
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec"; // Cole aqui a URL do Passo 1
+  </script>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            kahoot: {
+              purple: '#46178F',
+              softpurple: '#F3E8FF',
+              red: '#E21B3C',
+              blue: '#1368CE',
+              yellow: '#D89E00',
+              green: '#26890C'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Estilos Visuais e Cores de Palco -->
+  <style>
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.35); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.6); }
+
+    .kahoot-card-A { background-color: #E21B3C; color: #FFFFFF; }
+    .kahoot-card-B { background-color: #1368CE; color: #FFFFFF; }
+    .kahoot-card-C { background-color: #D89E00; color: #FFFFFF; }
+    .kahoot-card-D { background-color: #26890C; color: #FFFFFF; }
+    .kahoot-card-E { background-color: #8B5CF6; color: #FFFFFF; }
+    .kahoot-card-F { background-color: #EC4899; color: #FFFFFF; }
+    .kahoot-card-G { background-color: #06B6D4; color: #FFFFFF; }
+    .kahoot-card-H { background-color: #F97316; color: #FFFFFF; }
+
+    .neon-correct {
+      outline: 5px solid #22C55E !important;
+      background-color: rgba(34, 197, 94, 0.22) !important;
+      border-color: #22C55E !important;
+      animation: neonGlowPulse 1.5s infinite ease-in-out;
+      z-index: 10;
+    }
+    @keyframes neonGlowPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.9), 0 0 15px rgba(74, 222, 128, 1); transform: scale(1.02); }
+      50% { box-shadow: 0 0 55px rgba(34, 197, 94, 1), 0 0 25px rgba(74, 222, 128, 1); transform: scale(1.035); }
+    }
+    .opcao-esmaecida {
+      opacity: 0.25 !important;
+      filter: grayscale(80%) !important;
+      transform: scale(0.97) !important;
+      transition: all 0.4s ease-in-out;
+    }
+    .btn-opcao {
+      transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-opcao:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08); }
+    .btn-opcao:active:not(:disabled) { transform: scale(0.98); }
+    .btn-opcao.selecionada {
+      outline: 3px solid #4F46E5 !important;
+      background-color: rgba(79, 70, 229, 0.08) !important;
+      transform: scale(0.99);
+    }
+    .live-bar { transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .telao-container {
+      background: radial-gradient(circle at center, #1E1B4B 0%, #0F172A 100%) !important;
+      min-height: 100vh;
+    }
+    .telao-texto-pergunta { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45); line-height: 1.25; }
+  </style>
+</head>
+<body class="bg-[#F8F9FD] dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200 font-sans antialiased">
+
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Cabeçalho -->
+  <header id="global-header" class="border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md sticky top-0 z-40 px-4 py-3 shadow-xs">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="voltarParaHome()">
+        <img id="header-logo" src="https://cdn-icons-png.flaticon.com/512/3407/3407024.png" class="w-10 h-10 rounded-2xl shadow-md border border-slate-100 object-cover" alt="Logo">
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 id="header-title" class="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">Quiz Master</h1>
+            <button type="button" id="btn-edit-branding" onclick="abrirModalBranding()" class="hidden text-slate-400 hover:text-indigo-600 text-xs p-1" title="Personalizar Nome e Logomarca">✏️</button>
+          </div>
+          <p id="header-desc" class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Plataforma Interativa de Avaliações</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button type="button" onclick="toggleTheme()" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition" title="Alternar Tema">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <div id="auth-actions" class="hidden flex items-center space-x-2">
+          <button type="button" id="btn-admin-nav-voltar" onclick="abrirPainelAdmin()" class="hidden text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-slate-800 dark:text-indigo-300 font-bold py-2 px-3 rounded-xl transition">Painel ADM</button>
+          <button type="button" onclick="logout()" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300 font-bold py-2 px-3.5 rounded-xl transition">Sair</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-4 sm:p-6">
+    
+    <!-- TELA 1: LOGIN & CADASTRO -->
+    <section id="view-auth" class="max-w-md mx-auto my-10">
+      <div id="auth-concurso-aviso" class="hidden mb-4 p-4 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-center">
+        <span class="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">🎯 Concurso Conectado</span>
+        <p class="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">Faça login ou cadastre-se para entrar na sala!</p>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800">
+        <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6">
+          <button type="button" id="tab-btn-login" onclick="switchAuthTab('login')" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs transition">Entrar</button>
+          <button type="button" id="tab-btn-register" onclick="switchAuthTab('register')" class="flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 transition">Criar Conta</button>
+        </div>
+
+        <form id="form-login" action="javascript:void(0);" onsubmit="event.preventDefault(); handleLogin(event);" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">E-mail</label>
+            <input type="email" id="login-email" required placeholder="seu@email.com" class="w-full px-3.5 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Senha</label>
+            <input type="password" id="login-pass" required placeholder="••••••••" class="w-full px-3.5 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          </div>
+          <button type="submit" id="btn-login-submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/25 transition flex items-center justify-center">
+            <span id="btn-login-text">Entrar no Quiz</span>
+            <div id="btn-login-spinner" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          </button>
+          <div class="text-center pt-2">
+            <button type="button" onclick="toggleRecovery(true)" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Esqueceu sua senha?</button>
+          </div>
+        </form>
+
+        <form id="form-register" action="javascript:void(0);" onsubmit="event.preventDefault(); handleRegister(event);" class="space-y-3.5 hidden">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nome Completo</label>
+            <input type="text" id="reg-nome" required placeholder="Ex: Lucas Silva" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">E-mail</label>
+            <input type="email" id="reg-email" required placeholder="seu@email.com" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Telefone</label>
+              <input type="text" id="reg-tel" placeholder="(00) 00000-0000" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Igreja / Grupo</label>
+              <input type="text" id="reg-igreja" placeholder="Unidade" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Crie sua Senha</label>
+            <input type="password" id="reg-senha" required placeholder="Mínimo 6 dígitos" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <button type="submit" id="btn-reg-submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition flex items-center justify-center">
+            <span id="btn-reg-text">Cadastrar e Participar</span>
+            <div id="btn-reg-spinner" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          </button>
+        </form>
+
+        <div id="box-recovery" class="hidden mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+          <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300">Recuperação de Acesso</h3>
+          <input type="email" id="recov-email" placeholder="Digite seu e-mail cadastrado" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+          <button type="button" onclick="requestToken()" class="w-full py-2 text-xs bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition">Receber Código de 6 dígitos</button>
+          
+          <div id="step-token" class="hidden space-y-2 pt-2">
+            <input type="text" id="recov-code" placeholder="Código de 6 dígitos" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            <input type="password" id="recov-newpass" placeholder="Nova Senha" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            <button type="button" onclick="submitNewPass()" class="w-full py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">Redefinir Senha</button>
+          </div>
+          <div class="text-center pt-1">
+            <button type="button" onclick="toggleRecovery(false)" class="text-xs text-slate-400 hover:underline">Voltar ao login</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA 2: CENTRAL DO PARTICIPANTE -->
+    <section id="view-participant-home" class="hidden space-y-6 max-w-xl mx-auto">
+      <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs text-center space-y-3">
+        <span class="text-3xl">🎮</span>
+        <h2 class="text-xl font-extrabold text-slate-900 dark:text-white">Central do Participante</h2>
+        <p class="text-xs text-slate-400">Entre em um evento ao vivo ou digite o código do seu concurso</p>
+
+        <div class="flex gap-2 max-w-sm mx-auto pt-2">
+          <input type="text" id="input-token-manual" placeholder="Código do Token (ex: TK_123)" class="flex-1 px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 uppercase outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+          <button type="button" onclick="entrarPorTokenManual()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition">Entrar</button>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-3">
+        <h3 class="text-xs font-black uppercase tracking-wider text-slate-400">Concursos Disponíveis Agora</h3>
+        <div id="lista-concursos-usuario" class="space-y-2.5">
+          <p class="text-xs text-slate-400 text-center py-4">Buscando concursos disponíveis...</p>
+        </div>
+      </div>
+
+      <div id="secao-historico-usuario" class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-black uppercase tracking-wider text-indigo-600">📜 Meus Concursos Anteriores</h3>
+          <button type="button" onclick="carregarHistoricoParticipante()" class="text-[11px] font-bold text-slate-400 hover:text-indigo-600">Atualizar</button>
+        </div>
+        <div id="lista-historico-usuario" class="space-y-2.5">
+          <p class="text-xs text-slate-400 text-center py-3">Carregando histórico...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA 3: PARTICIPANTE (QUIZ INTERATIVO) -->
+    <section id="view-quiz" class="hidden space-y-4">
+      <div class="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
+        <div>
+          <span id="quiz-badge" class="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-50 text-amber-700">Aguardando Início</span>
+          <h2 id="quiz-titulo" class="text-base font-extrabold mt-1">Carregando Concurso...</h2>
+        </div>
+        <div class="flex items-center space-x-3 text-right">
+          <div id="quiz-timer-badge" class="hidden px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-slate-800 border border-indigo-200 text-xs font-black text-indigo-600">
+            ⏱️ 0s
+          </div>
+          <div>
+            <span class="text-xs text-slate-400 font-medium">Pontuação</span>
+            <p id="quiz-peso" class="text-lg font-black text-indigo-600 dark:text-indigo-400">1.0 pt</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-md">
+        <div class="text-xs font-semibold text-slate-400 mb-2 flex justify-between items-center">
+          <span id="quiz-tema">Tema</span>
+          <button type="button" id="btn-ver-explicacao-quiz" onclick="abrirModalExplicacaoQuestao()" class="hidden text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+            💡 Ver Explicação / Referência
+          </button>
+        </div>
+
+        <h3 id="quiz-pergunta" class="text-xl sm:text-2xl font-black mb-4 leading-snug">O apresentador ainda não iniciou a pergunta. Aguarde nesta tela!</h3>
+        <p id="quiz-tipo-alerta" class="text-xs text-amber-600 dark:text-amber-400 font-bold mb-5"></p>
+
+        <div id="box-share-qr-espera" class="hidden py-4 text-center">
+          <button type="button" onclick="abrirModalCompartilharQR()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-indigo-700 dark:text-indigo-300 text-xs font-extrabold rounded-2xl border border-indigo-200 dark:border-slate-700 shadow-xs transition flex items-center space-x-2 mx-auto">
+            <span>📲 Mostrar QR Code para um colega ao lado</span>
+          </button>
+        </div>
+
+        <div id="quiz-opcoes" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+
+        <button type="button" id="btn-confirmar" onclick="confirmarResposta()" class="hidden w-full mt-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition">
+          Confirmar Resposta
+        </button>
+      </div>
+    </section>
+
+    <!-- TELA 4: PAINEL ADMINISTRADOR -->
+    <section id="view-admin" class="hidden space-y-6">
+      <div class="flex flex-wrap gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
+        <button type="button" onclick="switchAdminTab('live')" id="tab-adm-live" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-xs transition">🎮 Ao Vivo</button>
+        <button type="button" onclick="switchAdminTab('concursos')" id="tab-adm-concursos" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 transition">🏆 Concursos &amp; QR Code</button>
+        <button type="button" onclick="switchAdminTab('questoes')" id="tab-adm-questoes" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 transition">📝 Criar Questões &amp; IA</button>
+        <button type="button" onclick="switchAdminTab('usuarios')" id="tab-adm-usuarios" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 transition">👥 Usuários</button>
+        <button type="button" onclick="switchAdminTab('relatorios')" id="tab-adm-relatorios" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 transition">📊 Relatórios &amp; Dashboard</button>
+      </div>
+
+      <!-- ABA 1: AO VIVO -->
+      <div id="adm-content-live" class="space-y-5">
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-base font-extrabold text-slate-900 dark:text-white">Console de Transmissão</h2>
+              <div class="flex items-center space-x-2 mt-1">
+                <span class="text-xs text-slate-400">Concurso:</span>
+                <select id="select-concurso-live" onchange="selecionarConcursoPeloSelect(this.value)" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-slate-700 outline-none">
+                  <option value="">Selecione um concurso...</option>
+                </select>
+                <span id="badge-status-concurso-live" class="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">--</span>
+                <span id="badge-timer-cockpit" class="hidden text-[11px] font-black px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">⏱️ --</span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" id="btn-iniciar-concurso-live" onclick="adminIniciarConcurso()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-md transition flex items-center space-x-1">
+                <span>▶ Iniciar Concurso</span>
+              </button>
+              <button type="button" onclick="adminPerguntaAnterior()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
+                ⬅ Anterior
+              </button>
+              <button type="button" onclick="adminToggleRevelar()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold rounded-xl shadow-xs transition">
+                👁 Revelar Resposta
+              </button>
+              <button type="button" onclick="adminProximaPergunta()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-xs transition">
+                Próxima ➔
+              </button>
+              <button type="button" onclick="adminFinalizarConcurso()" class="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold rounded-xl shadow-xs transition">
+                Encerrar
+              </button>
+              <button type="button" id="btn-reabrir-live" onclick="adminReabrirConcursoAtual()" class="hidden px-3 py-2 bg-indigo-100 text-indigo-800 hover:bg-indigo-200 text-xs font-bold rounded-xl transition">
+                🔓 Reabrir
+              </button>
+              <button type="button" id="btn-reset-agendado-live" onclick="adminResetarParaAgendadoAtual()" class="px-2.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
+                ⏪ Sala de Espera
+              </button>
+              <button type="button" onclick="abrirModalRegrasDesempate()" class="px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition">
+                ⚖️ Regras
+              </button>
+              <button type="button" onclick="abrirModoTelao()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-extrabold rounded-xl shadow-xs transition">
+                📺 Telão
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black uppercase tracking-wider text-indigo-600">Pergunta em Exibição</span>
+              <span id="live-total-respostas" class="text-xs font-extrabold px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
+                0 de 0 responderam (0%)
+              </span>
+            </div>
+            <h3 id="live-pergunta-texto" class="text-lg font-black text-slate-900 dark:text-white leading-snug">Selecione um concurso e clique em "Iniciar Concurso".</h3>
+            <div id="live-alternativas-lista" class="space-y-2 pt-2"></div>
+            <div class="pt-2 text-right">
+              <button type="button" onclick="abrirModalExplicacaoQuestao()" class="text-xs font-bold text-indigo-600 hover:underline">
+                💡 Ver Referência / Observação Pedagógica
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-4">Votação da Plateia em Tempo Real</h3>
+            <div id="admin-chart" class="space-y-3">
+              <p class="text-xs text-slate-400">Aguardando votos da plateia...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 2: CONCURSOS -->
+      <div id="adm-content-concursos" class="hidden space-y-5">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
+          <h3 class="text-sm font-extrabold mb-3">Criar Novo Concurso</h3>
+          <div class="flex flex-col sm:flex-row gap-2.5">
+            <input type="text" id="novo-concurso-titulo" placeholder="Ex: Grande Quiz Bíblico 2026" class="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500">
+            <select id="novo-concurso-tempo" class="px-3 py-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+              <option value="0">✋ Manual (Sem Timer)</option>
+              <option value="30">⏱️ 30 Segundos</option>
+              <option value="60">⏱️ 60 Segundos (1 min)</option>
+              <option value="120">⏱️ 120 Segundos (2 min)</option>
+            </select>
+            <button type="button" onclick="criarNovoConcurso()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-emerald-500/20 transition">Criar Concurso</button>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
+          <h3 class="text-sm font-extrabold mb-4">Concursos Cadastrados</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold">
+                  <th class="p-3">ID</th>
+                  <th class="p-3">Título</th>
+                  <th class="p-3">Tempo</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3">Token</th>
+                  <th class="p-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="lista-concursos-body" class="divide-y divide-slate-100 dark:divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 3: CRIAR QUESTÕES -->
+      <div id="adm-content-questoes" class="hidden space-y-5">
+        <div class="bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 id="form-questao-titulo-acao" class="text-base font-extrabold text-slate-900 dark:text-white">Criar Nova Pergunta Interativa</h3>
+            <button type="button" id="btn-cancelar-edicao-questao" onclick="cancelarEdicaoQuestao()" class="hidden text-xs text-rose-600 font-bold hover:underline">✕ Cancelar Edição</button>
+          </div>
+          <input type="hidden" id="edit-questao-id-form">
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Selecione o Concurso Alvo</label>
+            <div class="relative">
+              <input type="text" id="quest-concurso-search" oninput="filtrarConcursosDropdown(this.value)" onfocus="abrirDropdownConcursos()" placeholder="Digite para pesquisar o concurso..." class="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+              <div id="quest-concurso-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 divide-y divide-slate-100 dark:divide-slate-700"></div>
+            </div>
+            <p id="quest-concurso-selecionado-label" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-1.5"></p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">Tema / Assunto</label>
+              <input type="text" id="manual-tema" placeholder="Ex: História Bíblica" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">Referência / Observação</label>
+              <input type="text" id="manual-ref" placeholder="Ex: Gênesis 12:1-4" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Enunciado da Questão</label>
+            <textarea id="manual-enunciado" placeholder="Digite aqui o texto da pergunta..." rows="2" class="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Alternativas (Marque a caixa para indicar a correta):</label>
+              <button type="button" onclick="adicionarNovaAlternativa()" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 rounded-lg transition">
+                + Adicionar Alternativa (E, F...)
+              </button>
+            </div>
+            <div id="container-alternativas-dinamicas" class="space-y-2.5"></div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tipo de Seleção</label>
+              <select id="manual-tipo" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+                <option value="Unica">Seleção Única (Apenas 1 correta)</option>
+                <option value="Multipla">Múltipla Escolha (Mais de 1 correta)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Pontuação Máxima</label>
+              <input type="number" id="manual-peso" value="1.0" step="0.5" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            </div>
+          </div>
+
+          <button type="button" id="btn-salvar-questao-form" onclick="salvarQuestaoManual()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md transition">
+            Salvar Questão no Concurso
+          </button>
+        </div>
+
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800/80 p-6 rounded-3xl border border-indigo-100 dark:border-slate-800 shadow-xs space-y-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-lg">✨</span>
+            <h4 class="text-sm font-extrabold text-indigo-950 dark:text-indigo-200">Gerador em Lote com IA (Google Gemini)</h4>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <input type="text" id="ai-tema" placeholder="Tema (ex: Parábolas de Lucas)" class="px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            <input type="text" id="ai-ref" placeholder="Ref (ex: Lucas 15)" class="px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            <input type="number" id="ai-qtd" value="3" min="1" max="10" placeholder="Qtd" class="px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="password" id="ai-apikey" placeholder="Chave de API do Gemini" class="flex-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            <button type="button" onclick="gerarQuestoesComIA()" id="btn-gerar-ia" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center justify-center">
+              <span>Gerar Questões com IA</span>
+              <div id="spinner-ia" class="hidden ml-2 w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
+          <h3 class="text-sm font-extrabold mb-3">Questões Cadastradas no Concurso Selecionado</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold">
+                  <th class="p-3">Tema</th>
+                  <th class="p-3">Pergunta</th>
+                  <th class="p-3">Gabarito</th>
+                  <th class="p-3">Peso</th>
+                  <th class="p-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="lista-questoes-body" class="divide-y divide-slate-100 dark:divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 4: USUÁRIOS -->
+      <div id="adm-content-usuarios" class="hidden space-y-5">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
+          <h3 class="text-sm font-extrabold mb-4">Usuários Inscritos</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold">
+                  <th class="p-3">Nome</th>
+                  <th class="p-3">E-mail</th>
+                  <th class="p-3">Telefone</th>
+                  <th class="p-3">Unidade</th>
+                  <th class="p-3">Perfil</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="lista-usuarios-body" class="divide-y divide-slate-100 dark:divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 5: RELATÓRIOS & DASHBOARD COM SUPER PÓDIO VISUAL (TOP 3) -->
+      <div id="adm-content-relatorios" class="hidden space-y-6">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span class="text-xs font-black uppercase tracking-wider text-indigo-600">Métricas Gerais</span>
+              <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Dashboard &amp; Super Pódio Consolidado</h3>
+            </div>
+            <div class="flex items-center space-x-2">
+              <input type="date" id="filtro-periodo-inicio" class="px-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+              <span class="text-xs text-slate-400">até</span>
+              <input type="date" id="filtro-periodo-fim" class="px-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+              <button type="button" onclick="carregarSuperPodioPeriodo()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition">Filtrar</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-4 rounded-2xl bg-indigo-50/50 dark:bg-slate-800/60 border border-indigo-100 dark:border-slate-800">
+              <span class="text-xs font-bold text-indigo-600">Concursos Realizados</span>
+              <div id="kpi-total-concursos" class="text-2xl font-black text-slate-900 dark:text-white mt-1">0</div>
+            </div>
+            <div class="p-4 rounded-2xl bg-emerald-50/50 dark:bg-slate-800/60 border border-emerald-100 dark:border-slate-800">
+              <span class="text-xs font-bold text-emerald-600">Participantes Únicos</span>
+              <div id="kpi-total-participantes" class="text-2xl font-black text-slate-900 dark:text-white mt-1">0</div>
+            </div>
+            <div class="p-4 rounded-2xl bg-amber-50/50 dark:bg-slate-800/60 border border-amber-100 dark:border-slate-800">
+              <span class="text-xs font-bold text-amber-600">Média Geral de Pontos</span>
+              <div id="kpi-media-pontos" class="text-2xl font-black text-slate-900 dark:text-white mt-1">0.0</div>
+            </div>
+          </div>
+
+          <!-- PÓDIO VISUAL DOS CAMPEÕES DO PERÍODO -->
+          <div id="super-podio-visual-box" class="pt-4 pb-2 border-t border-slate-100 dark:border-slate-800">
+            <h4 class="text-xs font-black uppercase text-slate-400 text-center mb-4">🏆 Campeões Acumulados do Período</h4>
+            <div class="flex justify-center items-end gap-2 max-w-sm mx-auto">
+              <div class="flex flex-col items-center flex-1">
+                <div id="super-podio-2-name" class="text-xs font-bold truncate w-full text-center mb-1 text-slate-700 dark:text-slate-300">---</div>
+                <div class="w-full bg-slate-300 dark:bg-slate-700 h-20 rounded-t-2xl flex flex-col justify-center items-center shadow-md border-t-4 border-slate-400">
+                  <span class="text-lg font-black text-slate-800 dark:text-white">2º</span>
+                  <span id="super-podio-2-pts" class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">0 pts</span>
+                </div>
+              </div>
+              <div class="flex flex-col items-center flex-1">
+                <div class="text-amber-400 text-xl animate-bounce mb-0.5">👑</div>
+                <div id="super-podio-1-name" class="text-xs font-bold truncate w-full text-center mb-1 text-slate-900 dark:text-white">---</div>
+                <div class="w-full bg-amber-400 dark:bg-amber-500 h-28 rounded-t-2xl flex flex-col justify-center items-center shadow-xl border-t-4 border-yellow-300 text-slate-950">
+                  <span class="text-2xl font-black">1º</span>
+                  <span id="super-podio-1-pts" class="text-xs font-black">0 pts</span>
+                </div>
+              </div>
+              <div class="flex flex-col items-center flex-1">
+                <div id="super-podio-3-name" class="text-xs font-bold truncate w-full text-center mb-1 text-slate-700 dark:text-slate-300">---</div>
+                <div class="w-full bg-amber-700/60 dark:bg-amber-800 h-16 rounded-t-2xl flex flex-col justify-center items-center shadow border-t-4 border-amber-600">
+                  <span class="text-base font-black text-white">3º</span>
+                  <span id="super-podio-3-pts" class="text-[11px] font-semibold text-amber-100">0 pts</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-center pt-4">
+              <button type="button" onclick="projetarSuperPodioTelao()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center space-x-2 mx-auto">
+                <span>📺 Projetar Campeões no Telão (Data Show)</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-black uppercase text-slate-400 mb-3">Tabela Geral do Período</h4>
+            <div class="overflow-x-auto max-h-56 overflow-y-auto">
+              <table class="w-full text-xs text-left">
+                <thead class="sticky top-0 bg-slate-50 dark:bg-slate-800 font-bold">
+                  <tr>
+                    <th class="p-2.5">Pos</th>
+                    <th class="p-2.5">Participante</th>
+                    <th class="p-2.5">E-mail</th>
+                    <th class="p-2.5 text-right">Eventos</th>
+                    <th class="p-2.5 text-right">Total Acertos</th>
+                    <th class="p-2.5 text-right">Pontuação Acumulada</th>
+                  </tr>
+                </thead>
+                <tbody id="lista-super-podio-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+            <div>
+              <h4 class="text-sm font-extrabold mb-2">Exportar PDF Oficial</h4>
+              <p class="text-xs text-slate-400 mb-4">Gera ata oficial no Google Drive na pasta Doc_Relatorios.</p>
+            </div>
+            <button type="button" onclick="gerarPDF()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">Exportar PDF</button>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-emerald-200/60 dark:border-emerald-950 shadow-xs flex flex-col justify-between bg-emerald-50/20 dark:bg-emerald-950/20">
+            <div>
+              <span class="text-xs font-black uppercase text-emerald-600 tracking-wider">Planilha Completa</span>
+              <h4 class="text-sm font-extrabold text-emerald-950 dark:text-emerald-200 mt-1 mb-2">Exportar Excel (.xlsx) Relacional</h4>
+              <p class="text-xs text-slate-400 mb-4">Gera pasta com 5 abas relacionais com todas as respostas e ranking.</p>
+            </div>
+            <button type="button" onclick="gerarExcel()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition">Exportar Planilha Excel (.xlsx)</button>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+            <div>
+              <h4 class="text-sm font-extrabold mb-2">Notificar Ausentes</h4>
+              <p class="text-xs text-slate-400 mb-4">Envia e-mail formal de ausência e nota zero aos faltosos.</p>
+            </div>
+            <button type="button" onclick="notificarAusentes()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">Disparar Notificações</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA 5: MODO TELÃO (PROJEÇÃO DE PALCO / TV) -->
+    <section id="view-projection" class="hidden min-h-[90vh] flex flex-col justify-between py-6 px-4">
+      
+      <!-- FASE 1: SALA DE ESPERA COM QR CODE GIGANTE E CONECTADOS AO VIVO -->
+      <div id="telao-fase-espera" class="flex flex-col items-center justify-center text-center space-y-6 my-auto">
+        <span class="text-xs font-black uppercase tracking-widest text-indigo-400 bg-indigo-950/80 px-5 py-2 rounded-full border border-indigo-700">
+          Apresentação Oficial ao Vivo
+        </span>
+        <h2 id="telao-espera-titulo" class="text-4xl sm:text-6xl font-black text-white tracking-tight">Nome do Concurso</h2>
+        <p class="text-base sm:text-lg text-slate-300 font-medium">Aponte a câmera do seu celular para entrar no Quiz!</p>
+        
+        <div class="p-5 bg-white rounded-3xl shadow-2xl border-4 border-indigo-500/40">
+          <img id="telao-espera-qr" src="" class="w-64 h-64 sm:w-80 sm:h-80 object-contain" alt="QR Code">
+        </div>
+        
+        <div class="flex items-center space-x-6 text-sm font-bold text-slate-300">
+          <span>Código / Token: <strong id="telao-espera-token" class="text-indigo-400 font-mono text-xl">--</strong></span>
+          <span class="text-slate-600">|</span>
+          <span id="telao-espera-conectados" class="text-emerald-400 text-lg">0 participantes conectados</span>
+        </div>
+      </div>
+
+      <!-- FASE 2: PERGUNTA COM FONTES GIGANTES, GABARITO NEON E CRONÔMETRO -->
+      <div id="telao-fase-pergunta" class="hidden space-y-8 my-auto max-w-5xl mx-auto w-full">
+        <div class="flex items-center justify-between text-slate-300 font-bold text-sm">
+          <span id="telao-pergunta-tema" class="bg-slate-800/80 px-4 py-1.5 rounded-xl border border-slate-700">Tema</span>
+          
+          <div id="telao-timer-box" class="hidden px-5 py-2 rounded-2xl bg-indigo-950/90 border-2 border-indigo-500 text-white font-black text-xl shadow-lg">
+            ⏱️ 0s
+          </div>
+
+          <span id="telao-pergunta-status-votos" class="text-emerald-400 text-base font-extrabold">0 de 0 responderam</span>
+        </div>
+
+        <h2 id="telao-pergunta-enunciado" class="text-3xl sm:text-5xl font-black text-white text-center leading-tight py-4 telao-texto-pergunta">
+          Enunciado da Pergunta
+        </h2>
+
+        <div id="telao-opcoes-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+
+        <div id="telao-referencia-box" class="hidden p-5 rounded-2xl bg-indigo-950/80 border border-indigo-600 text-center space-y-2">
+          <span class="text-xs font-black uppercase text-indigo-400 tracking-wider">📖 Referência &amp; Explicação Pedagógica</span>
+          <p id="telao-referencia-texto" class="text-lg font-bold text-white leading-relaxed"></p>
+        </div>
+
+        <div id="telao-stats-revelacao" class="hidden pt-6 border-t border-slate-800">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-400 text-center mb-4">Distribuição de Votos da Plateia</h4>
+          <div id="telao-stats-barras" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
+        </div>
+      </div>
+
+      <!-- FASE 3: PÓDIO DE PALCO (COM TABELA DOS DEMAIS COLOCADOS ABAIXO) -->
+      <div id="telao-fase-podio" class="hidden text-center space-y-6 my-auto max-w-4xl mx-auto w-full">
+        <h2 id="telao-podio-titulo" class="text-4xl sm:text-6xl font-black text-white tracking-tight">🏆 Campeões da Rodada</h2>
+        
+        <div id="telao-podio-container" class="flex justify-center items-end gap-3 pt-12 pb-6 max-w-lg mx-auto"></div>
+
+        <!-- TABELA DE PALCO DOS DEMAIS COLOCADOS (DO 4º LUGAR EM DIANTE) -->
+        <div id="telao-box-restantes" class="hidden pt-4 border-t border-slate-800">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">Demais Classificados</h4>
+          <div class="overflow-x-auto max-h-48 overflow-y-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+              <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase font-bold sticky top-0">
+                <tr>
+                  <th class="p-2.5">Pos</th>
+                  <th class="p-2.5">Participante</th>
+                  <th class="p-2.5 text-right">Pontos</th>
+                  <th class="p-2.5 text-right">Aproveitamento</th>
+                </tr>
+              </thead>
+              <tbody id="telao-tabela-restantes" class="divide-y divide-slate-800/80 font-semibold"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- TELA 6: PÓDIO DO PARTICIPANTE -->
+    <section id="view-podio" class="hidden space-y-6">
+      <div id="podio-adm-voltar-box" class="hidden flex justify-between items-center bg-indigo-50 dark:bg-slate-900 p-4 rounded-2xl border border-indigo-100 dark:border-slate-800">
+        <span class="text-xs font-bold text-indigo-800 dark:text-indigo-300">Console do Organizador</span>
+        <button type="button" onclick="abrirPainelAdmin()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl shadow transition">
+          🔙 Voltar ao Console de Transmissão
+        </button>
+      </div>
+
+      <div class="text-center">
+        <h2 class="text-3xl font-black tracking-tight">🏆 Pódio dos Vencedores</h2>
+        <p class="text-xs text-slate-400 mt-1">Concurso Finalizado</p>
+      </div>
+
+      <div id="podium-container" class="flex justify-center items-end gap-2 pt-8 pb-4">
+        <div class="flex flex-col items-center flex-1 max-w-[130px]">
+          <div id="podium-2-name" class="text-xs font-bold truncate w-full text-center mb-1">---</div>
+          <div class="w-full bg-slate-300 dark:bg-slate-700 h-24 rounded-t-2xl flex flex-col justify-center items-center shadow-md border-t-4 border-slate-400">
+            <span class="text-xl font-black">2º</span>
+            <span id="podium-2-pts" class="text-xs font-semibold">0 pts</span>
+          </div>
+        </div>
+        <div class="flex flex-col items-center flex-1 max-w-[150px]">
+          <div class="text-amber-400 text-2xl animate-bounce mb-1">👑</div>
+          <div id="podium-1-name" class="text-xs font-bold truncate w-full text-center mb-1">---</div>
+          <div class="w-full bg-amber-400 dark:bg-amber-500 h-36 rounded-t-2xl flex flex-col justify-center items-center shadow-xl border-t-4 border-yellow-300 text-slate-950">
+            <span class="text-3xl font-black">1º</span>
+            <span id="podium-1-pts" class="text-xs font-bold">0 pts</span>
+          </div>
+        </div>
+        <div class="flex flex-col items-center flex-1 max-w-[130px]">
+          <div id="podium-3-name" class="text-xs font-bold truncate w-full text-center mb-1">---</div>
+          <div class="w-full bg-amber-700/60 dark:bg-amber-800 h-20 rounded-t-2xl flex flex-col justify-center items-center shadow border-t-4 border-amber-600">
+            <span class="text-lg font-black">3º</span>
+            <span id="podium-3-pts" class="text-xs font-semibold">0 pts</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="podio-participant-actions" class="flex flex-wrap justify-center gap-2 pt-2">
+        <button type="button" onclick="abrirModalGabarito()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition">
+          📋 Ver Meu Gabarito Completo
+        </button>
+        <button type="button" onclick="solicitarMeuRelatorio()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition">
+          📩 Receber Boletim por E-mail
+        </button>
+        <button type="button" onclick="voltarParaHome()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">
+          🏠 Minha Central de Concursos
+        </button>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/70 dark:border-slate-800 p-5 shadow-xs">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Placar Geral</h3>
+        <div class="overflow-x-auto max-h-60 overflow-y-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="sticky top-0 bg-slate-50 dark:bg-slate-800 font-bold">
+              <tr>
+                <th class="p-2.5">Pos</th>
+                <th class="p-2.5">Participante</th>
+                <th class="p-2.5 text-right">Pontos</th>
+                <th class="p-2.5 text-right">Aproveitamento</th>
+              </tr>
+            </thead>
+            <tbody id="podio-table-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== MODAIS ==================== -->
+
+    <!-- MODAL 1: QR CODE CENTRALIZADO DO ADM -->
+    <div id="modal-qrcode" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4">
+        <h4 class="text-sm font-extrabold text-slate-900 dark:text-white" id="qr-modal-title">QR Code de Entrada</h4>
+        <div class="flex justify-center p-4 bg-white rounded-2xl shadow-inner border border-slate-100">
+          <img id="qr-modal-img" src="" alt="QR Code" class="w-56 h-56 object-contain">
+        </div>
+        <div class="space-y-2">
+          <button type="button" id="btn-download-qr" onclick="baixarQRCode()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition">📥 Baixar Imagem PNG para o Telão</button>
+          <button type="button" id="btn-open-telao" onclick="abrirModoTelao()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">📺 Abrir Modo Telão</button>
+          <button type="button" onclick="fecharModalQR()" class="w-full py-1 text-xs text-slate-400 hover:underline">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 2: COMPARTILHAR QR CODE COM O COLEGA AO LADO -->
+    <div id="modal-compartilhar-qr" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4">
+        <span class="text-2xl">📲</span>
+        <h4 class="text-sm font-extrabold text-slate-900 dark:text-white">Compartilhar com Colega</h4>
+        <p class="text-xs text-slate-400">Peça para seu colega apontar a câmera do celular aqui:</p>
+        <div class="flex justify-center p-3 bg-white rounded-2xl shadow-inner border border-slate-100">
+          <img id="share-qr-img" src="" alt="QR Code Colega" class="w-48 h-48 object-contain">
+        </div>
+        <div>
+          <span class="text-[10px] font-bold text-slate-400 uppercase">Ou digite o Código:</span>
+          <p id="share-qr-token" class="text-lg font-black text-indigo-600 font-mono">--</p>
+        </div>
+        <button type="button" onclick="fecharModalCompartilharQR()" class="w-full py-2 bg-slate-800 text-white text-xs font-bold rounded-xl transition">Fechar</button>
+      </div>
+    </div>
+
+    <!-- MODAL 3: REGRAS & CRITÉRIOS DE DESEMPATE -->
+    <div id="modal-regras-desempate" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">⚖️ Regras Oficiais de Desempate</h3>
+          <button type="button" onclick="fecharModalRegrasDesempate()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Texto de referência pronto para o apresentador anunciar à plateia em caso de empate:
+        </p>
+        <div class="p-4 bg-indigo-50/60 dark:bg-slate-800/60 rounded-2xl border border-indigo-100 dark:border-slate-700 space-y-2.5 text-xs">
+          <p><strong>1º Critério:</strong> <em>Maior Pontuação Total Acumulada.</em></p>
+          <p><strong>2º Critério (Velocidade):</strong> <em>Menor Tempo Acumulado de Resposta (quem respondeu em menos segundos no somatório das rodadas).</em></p>
+          <p><strong>3º Critério:</strong> <em>Maior número de questões com acerto integral (100% dos pontos da questão).</em></p>
+        </div>
+        <button type="button" onclick="fecharModalRegrasDesempate()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">Fechar</button>
+      </div>
+    </div>
+
+    <!-- MODAL 4: PERSONALIZAR LOGO E NOME -->
+    <div id="modal-branding" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Identidade Visual do Sistema</h3>
+          <button type="button" onclick="fecharModalBranding()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nome da Organização / Igreja</label>
+            <input type="text" id="branding-nome" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Slogan / Descrição do Cabeçalho</label>
+            <input type="text" id="branding-desc" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Link URL da Logomarca (PNG/JPG)</label>
+            <input type="text" id="branding-logo" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+          </div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2 pt-2">
+          <button type="button" onclick="restaurarBrandingPadrao()" class="py-2 px-3 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl transition">Restaurar Padrão</button>
+          <button type="button" onclick="salvarBranding()" class="flex-1 py-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 5: PRÉ-VISUALIZAR QUESTÃO CADASTRADA -->
+    <div id="modal-ver-questao" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <span id="ver-questao-tema" class="text-xs font-bold text-indigo-600 uppercase">Tema</span>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">Visualização da Questão</h3>
+          </div>
+          <button type="button" onclick="fecharModalVerQuestao()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+        </div>
+        <p id="ver-questao-pergunta" class="text-sm font-bold text-slate-800 dark:text-slate-100"></p>
+        <div id="ver-questao-opcoes-grid" class="space-y-2"></div>
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs space-y-1">
+          <p><strong>Gabarito:</strong> <span id="ver-questao-gabarito" class="text-emerald-600 font-black"></span></p>
+          <p><strong>Referência:</strong> <span id="ver-questao-ref" class="text-slate-500 font-medium"></span></p>
+        </div>
+        <button type="button" onclick="fecharModalVerQuestao()" class="w-full py-2 bg-slate-800 text-white text-xs font-bold rounded-xl transition">Fechar</button>
+      </div>
+    </div>
+
+    <!-- MODAL 6: EXPLICAÇÃO PEDAGÓGICA -->
+    <div id="modal-explicacao" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 text-center">
+        <span class="text-3xl">💡</span>
+        <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Referência &amp; Explicação</h3>
+        <div class="p-4 bg-indigo-50/60 dark:bg-slate-800/60 rounded-2xl border border-indigo-100 dark:border-slate-700 text-left space-y-2">
+          <p class="text-xs font-bold text-indigo-700 dark:text-indigo-300">Base / Texto de Referência:</p>
+          <p id="explicacao-texto" class="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed"></p>
+        </div>
+        <button type="button" onclick="fecharModalExplicacao()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">Entendido</button>
+      </div>
+    </div>
+
+    <!-- MODAL 7: EDITAR USUÁRIO -->
+    <div id="modal-editar-usuario" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Editar Usuário</h3>
+          <button type="button" onclick="fecharModalEditarUsuario()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+        </div>
+        <input type="hidden" id="edit-user-id">
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nome Completo</label>
+            <input type="text" id="edit-user-nome" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">E-mail</label>
+            <input type="email" id="edit-user-email" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Telefone</label>
+              <input type="text" id="edit-user-tel" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Unidade / Igreja</label>
+              <input type="text" id="edit-user-igreja" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Perfil de Acesso</label>
+              <select id="edit-user-perfil" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+                <option value="USER">USER (Participante)</option>
+                <option value="ADMIN">ADMIN (Organizador)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Status da Conta</label>
+              <select id="edit-user-status" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+                <option value="Ativo">Ativo</option>
+                <option value="Inativo">Inativo / Bloqueado</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Redefinir Senha (opcional)</label>
+            <input type="password" id="edit-user-senha" placeholder="Deixe em branco para manter a atual" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="fecharModalEditarUsuario()" class="flex-1 py-2 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition">Cancelar</button>
+          <button type="button" onclick="salvarEdicaoUsuario()" class="flex-1 py-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 8: EDITAR CONCURSO (COM TIMER CONFIGURÁVEL) -->
+    <div id="modal-editar-concurso" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Editar Concurso</h3>
+          <button type="button" onclick="fecharModalEditarConcurso()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+        </div>
+        <input type="hidden" id="edit-concurso-id">
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Título do Evento</label>
+            <input type="text" id="edit-concurso-titulo" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Data Início</label>
+              <input type="date" id="edit-concurso-data-inicio" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Data Fim</label>
+              <input type="date" id="edit-concurso-data-fim" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tempo Limite por Questão</label>
+            <select id="edit-concurso-tempo" class="w-full px-3 py-2 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+              <option value="0">✋ Manual (Sem Timer)</option>
+              <option value="30">⏱️ 30 Segundos</option>
+              <option value="60">⏱️ 60 Segundos (1 min)</option>
+              <option value="120">⏱️ 120 Segundos (2 min)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="fecharModalEditarConcurso()" class="flex-1 py-2 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition">Cancelar</button>
+          <button type="button" onclick="salvarEdicaoConcurso()" class="flex-1 py-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 9: GABARITO SINTÉTICO DO PARTICIPANTE -->
+    <div id="modal-gabarito" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Meu Gabarito Detalhado</h3>
+            <p class="text-xs text-slate-400">Confira suas respostas, gabarito oficial e pontos</p>
+          </div>
+          <button type="button" onclick="fecharModalGabarito()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">✕</button>
+        </div>
+        <div id="gabarito-lista-container" class="space-y-3 overflow-y-auto py-4 flex-1"></div>
+        <button type="button" onclick="fecharModalGabarito()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">
+          Fechar
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <?!= include('JS_Client'); ?>
+</body>
+</html>
