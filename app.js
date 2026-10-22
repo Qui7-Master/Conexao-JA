@@ -1801,11 +1801,6 @@ window.gerarQuestoesComIA = function() {
       toast(res.count + ' questões geradas com sucesso!', 'success');
       carregarQuestoesAdmin();
     })
-    .withFailureHandler(function(err) {
-      btn.disabled = false;
-      spinner.classList.add('hidden');
-      toast(err.message || 'Erro ao gerar com IA', 'error');
-    })
     .apiGenerateQuestionsAI(AppState.sessionToken, {
       concursoId: cId,
       tema: tema,
