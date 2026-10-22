@@ -1,6 +1,6 @@
 /**
  * ====================================================================
- * app.js - Motor Completo do Aplicativo no GitHub Pages
+ * app.js - Motor Completo do Aplicativo no GitHub Pages (JS Puro)
  * Comunicação direta via fetch() com o Google Apps Script (Sem CORS)
  * ====================================================================
  */
@@ -8,7 +8,7 @@
 // ====================================================================
 // ⚙️ CONFIGURE AQUI SUA URL DO GOOGLE APPS SCRIPT (/exec)
 // ====================================================================
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec"; // Cole sua URL do Passo 1 aqui
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec"; // <-- Cole sua URL /exec aqui
 
 // ====================================================================
 // 🔌 PONTE UNIVERSAL: CONECTA O GITHUB PAGES AO GOOGLE APPS SCRIPT
@@ -20,7 +20,6 @@ function callGasApi(action, data) {
     throw new Error(msg);
   }
 
-  // Envio como text/plain para evitar bloqueios de CORS pré-flight no Google
   return fetch(GAS_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -176,7 +175,6 @@ window.addEventListener('DOMContentLoaded', function() {
     localStorage.setItem('QUIZ_CONCURSO_TOKEN', tokenUrl);
   }
 
-  // Carrega configurações da organização
   google.script.run
     .withSuccessHandler(function(cfg) {
       if (cfg.orgName) document.getElementById('header-title').innerText = cfg.orgName;
@@ -1611,7 +1609,7 @@ window.carregarDadosAdmin = function() {
           '<td class="p-3 text-right space-x-1">' +
             '<button type="button" onclick="abrirModalEditarUsuario(\'' + u.ID_Usuario + '\')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition">Editar</button>' +
             '<button type="button" onclick="alternarStatusUsuario(\'' + u.ID_Usuario + '\', \'' + (u.Status_Conta === 'Ativo' ? 'Inativo' : 'Ativo') + '\')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition">' + (u.Status_Conta === 'Ativo' ? 'Bloquear' : 'Ativar') + '</button>' +
-            '<button type="button" onclick="deletarUsuario(\'' + u.ID_Usuario + '\')" class="px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition">✕</button>' +
+            '<button type="button" onclick="deletarUsuario(\'' + u.ID_Usuario + '\')" class="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition">✕</button>' +
           '</td>' +
         '</tr>';
       });
@@ -1903,4 +1901,3 @@ window.solicitarMeuRelatorio = function() {
     .withSuccessHandler(function() { toast('Boletim individual enviado para seu e-mail!', 'success'); })
     .apiSendMyReport(AppState.sessionToken, AppState.concursoId);
 };
-</script>
