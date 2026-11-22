@@ -1,18 +1,11 @@
 /**
  * ====================================================================
- * app.js - Motor Completo do Aplicativo no GitHub Pages (JS Puro)
- * Comunicação direta via fetch() com o Google Apps Script (Sem CORS)
+ * app.js - Motor Completo com Acesso Rápido por Nome e Cadastro Progressivo
  * ====================================================================
  */
 
-// ====================================================================
-// ⚙️ CONFIGURE AQUI SUA URL DO GOOGLE APPS SCRIPT (/exec)
-// ====================================================================
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec"; // <-- Cole sua URL /exec aqui
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec"; // <-- COLE SUA URL /exec AQUI
 
-// ====================================================================
-// 🔌 PONTE UNIVERSAL: CONECTA O GITHUB PAGES AO GOOGLE APPS SCRIPT
-// ====================================================================
 function callGasApi(action, data) {
   if (!GAS_API_URL || GAS_API_URL.indexOf('/exec') === -1 || GAS_API_URL.indexOf('SUA_URL') !== -1) {
     var msg = "⚠️ ATENÇÃO: Configure a variável GAS_API_URL na linha 11 do arquivo app.js com a sua URL do Apps Script (/exec)!";
@@ -34,7 +27,6 @@ function callGasApi(action, data) {
   });
 }
 
-// Emulador da interface do Google para manter compatibilidade 100% perfeita
 window.google = window.google || {};
 window.google.script = window.google.script || {};
 window.google.script.run = {
@@ -68,7 +60,9 @@ window.google.script.run = {
   apiSaveOrgConfig: function(tok, cfg) { this._execute('saveOrgConfig', { sessionToken: tok, config: cfg }); },
   apiResetOrgConfig: function(tok) { this._execute('resetOrgConfig', { sessionToken: tok }); },
   apiLogin: function(email, pass) { this._execute('login', { email: email, senha: pass }); },
+  apiQuickLogin: function(nome) { this._execute('quickLogin', { primeiroNome: nome }); },
   apiRegister: function(dados) { this._execute('register', { dados: dados }); },
+  apiUpdateUser: function(tok, uId, dados) { this._execute('updateUser', { sessionToken: tok, userId: uId, dados: dados }); },
   apiForgotPassword: function(email) { this._execute('forgotPassword', { email: email }); },
   apiResetPassword: function(email, code, newPass) { this._execute('resetPassword', { email: email, code: code, newPass: newPass }); },
   apiGetConcursoState: function(token, userId) { this._execute('getConcursoState', { concursoToken: token, userId: userId }); },
@@ -96,7 +90,6 @@ window.google.script.run = {
   apiAdminDeleteQuestao: function(tok, qId) { this._execute('deleteQuestao', { sessionToken: tok, questaoId: qId }); },
   apiGenerateQuestionsAI: function(tok, params) { this._execute('generateQuestionsAI', { sessionToken: tok, params: params }); },
   apiAdminListUsers: function(tok) { this._execute('listUsers', { sessionToken: tok }); },
-  apiAdminUpdateUser: function(tok, uId, dados) { this._execute('updateUser', { sessionToken: tok, userId: uId, dados: dados }); },
   apiAdminDeleteUser: function(tok, uId) { this._execute('deleteUser', { sessionToken: tok, userId: uId }); },
   apiAdminToggleUserStatus: function(tok, uId, st) { this._execute('toggleUserStatus', { sessionToken: tok, userId: uId, novoStatus: st }); },
   apiAdminGetSuperPodio: function(tok, ini, fim) { this._execute('getSuperPodio', { sessionToken: tok, dataInicio: ini, dataFim: fim }); },
@@ -106,10 +99,6 @@ window.google.script.run = {
   apiNotifyAbsentees: function(tok, cId) { this._execute('notifyAbsentees', { sessionToken: tok, concursoId: cId }); },
   apiSendMyReport: function(tok, cId) { this._execute('sendMyReport', { sessionToken: tok, concursoId: cId }); }
 };
-
-// ====================================================================
-// --- LÓGICA DE INTERFACE, CONTROLE E TEMPO REAL ---
-// ====================================================================
 
 window.AppState = {
   sessionToken: localStorage.getItem('QUIZ_TOKEN') || null,
@@ -137,14 +126,10 @@ window.AppState = {
 
 window.getKahootColorClass = function(letra) {
   var mapa = {
-    'A': 'bg-rose-500 text-white',
-    'B': 'bg-sky-600 text-white',
-    'C': 'bg-amber-500 text-white',
-    'D': 'bg-emerald-600 text-white',
-    'E': 'bg-purple-600 text-white',
-    'F': 'bg-pink-600 text-white',
-    'G': 'bg-cyan-600 text-white',
-    'H': 'bg-orange-600 text-white'
+    'A': 'bg-rose-500 text-white', 'B': 'bg-sky-600 text-white',
+    'C': 'bg-amber-500 text-white', 'D': 'bg-emerald-600 text-white',
+    'E': 'bg-purple-600 text-white', 'F': 'bg-pink-600 text-white',
+    'G': 'bg-cyan-600 text-white', 'H': 'bg-orange-600 text-white'
   };
   return mapa[letra] || 'bg-slate-700 text-white';
 };
@@ -183,7 +168,6 @@ window.addEventListener('DOMContentLoaded', function() {
     })
     .apiGetOrgConfig();
 
-  // MODO TELÃO (PROJEÇÃO DE PALCO PARA PROJETOR/TV)
   if (viewParam === 'telao') {
     AppState.isTelaoMode = true;
     var headerEl = document.getElementById('global-header');
@@ -208,6 +192,12 @@ window.addEventListener('DOMContentLoaded', function() {
 
   if (AppState.sessionToken && AppState.user) {
     document.getElementById('auth-actions').classList.remove('hidden');
+    
+    // Verifica se entrou via acesso rápido pelo nome e precisa completar cadastro obrigatório
+    if (AppState.user.Email && AppState.user.Email.indexOf('@backup.com') !== -1) {
+      abrirModalCadastroObrigatorio();
+    }
+
     if (AppState.user.Perfil === 'ADMIN') {
       document.getElementById('btn-admin-nav-voltar').classList.remove('hidden');
       document.getElementById('btn-edit-branding').classList.remove('hidden');
@@ -228,6 +218,74 @@ window.addEventListener('DOMContentLoaded', function() {
     showView('view-auth');
   }
 });
+
+// Acesso Rápido por Primeiro Nome
+window.handleQuickLogin = function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  var nome = document.getElementById('quick-nome').value;
+  if (!nome || !nome.trim()) return toast('Digite seu nome.', 'error');
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      AppState.sessionToken = res.token;
+      AppState.user = res.user;
+      localStorage.setItem('QUIZ_TOKEN', res.token);
+      localStorage.setItem('QUIZ_USER', JSON.stringify(res.user));
+
+      document.getElementById('auth-actions').classList.remove('hidden');
+      
+      // Abre modal obrigatório para atualizar e-mail e senha do backup
+      abrirModalCadastroObrigatorio();
+
+      if (AppState.concursoToken) {
+        showView('view-quiz');
+      } else {
+        showView('view-participant-home');
+        carregarConcursosHomeUsuario();
+        carregarHistoricoParticipante();
+      }
+      startPolling();
+      toast('Olá, ' + res.user.Nome + '! Complete seu cadastro.', 'success');
+    })
+    .withFailureHandler(function(err) { toast(err.message, 'error'); })
+    .apiQuickLogin(nome.trim());
+};
+
+window.abrirModalCadastroObrigatorio = function() {
+  document.getElementById('modal-cadastro-obrigatorio').classList.remove('hidden');
+  if (AppState.user) {
+    document.getElementById('cad-obrig-nome').value = AppState.user.Nome || '';
+    document.getElementById('cad-obrig-email').value = (AppState.user.Email && AppState.user.Email.indexOf('@backup.com') === -1) ? AppState.user.Email : '';
+  }
+};
+
+window.salvarCadastroObrigatorio = function() {
+  var email = document.getElementById('cad-obrig-email').value;
+  var tel = document.getElementById('cad-obrig-tel').value;
+  var igreja = document.getElementById('cad-obrig-igreja').value;
+  var senha = document.getElementById('cad-obrig-senha').value;
+
+  if (!email || !senha || senha.length < 4) {
+    return toast('Informe um e-mail válido e uma senha de pelo menos 4 dígitos.', 'error');
+  }
+
+  var dados = {
+    Email: email,
+    Telefone: tel,
+    Igreja_Unidade: igreja,
+    NovaSenha: senha
+  };
+
+  google.script.run
+    .withSuccessHandler(function() {
+      toast('Cadastro concluído com sucesso!', 'success');
+      document.getElementById('modal-cadastro-obrigatorio').classList.add('hidden');
+      AppState.user.Email = email;
+      localStorage.setItem('QUIZ_USER', JSON.stringify(AppState.user));
+    })
+    .withFailureHandler(function(err) { toast(err.message, 'error'); })
+    .apiAdminUpdateUser(AppState.sessionToken, AppState.user.ID_Usuario, dados);
+};
 
 window.showView = function(viewId) {
   var views = ['view-auth', 'view-participant-home', 'view-quiz', 'view-admin', 'view-projection', 'view-podio'];
@@ -263,15 +321,16 @@ window.toggleTheme = function() {
 
 window.switchAuthTab = function(mode) {
   var isLogin = mode === 'login';
+  var isQuick = mode === 'quick';
+  var isReg = mode === 'register';
+
   document.getElementById('form-login').classList.toggle('hidden', !isLogin);
-  document.getElementById('form-register').classList.toggle('hidden', isLogin);
-  
-  document.getElementById('tab-btn-login').className = isLogin 
-    ? 'flex-1 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs transition'
-    : 'flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 transition';
-  document.getElementById('tab-btn-register').className = !isLogin 
-    ? 'flex-1 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs transition'
-    : 'flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 transition';
+  document.getElementById('form-quick').classList.toggle('hidden', !isQuick);
+  document.getElementById('form-register').classList.toggle('hidden', !isReg);
+
+  document.getElementById('tab-btn-login').className = isLogin ? 'flex-1 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs transition' : 'flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 transition';
+  document.getElementById('tab-btn-quick').className = isQuick ? 'flex-1 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs transition' : 'flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 transition';
+  document.getElementById('tab-btn-register').className = isReg ? 'flex-1 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs transition' : 'flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 transition';
 };
 
 window.toggleRecovery = function(show) {
@@ -283,27 +342,14 @@ window.handleLogin = function(e) {
   var email = document.getElementById('login-email').value;
   var pass = document.getElementById('login-pass').value;
 
-  var btn = document.getElementById('btn-login-submit');
-  var txt = document.getElementById('btn-login-text');
-  var spinner = document.getElementById('btn-login-spinner');
-
-  btn.disabled = true;
-  txt.innerText = 'Entrando...';
-  spinner.classList.remove('hidden');
-
   google.script.run
     .withSuccessHandler(function(res) {
-      btn.disabled = false;
-      txt.innerText = 'Entrar no Quiz';
-      spinner.classList.add('hidden');
-
       AppState.sessionToken = res.token;
       AppState.user = res.user;
       localStorage.setItem('QUIZ_TOKEN', res.token);
       localStorage.setItem('QUIZ_USER', JSON.stringify(res.user));
 
       document.getElementById('auth-actions').classList.remove('hidden');
-
       if (res.user.Perfil === 'ADMIN') {
         document.getElementById('btn-admin-nav-voltar').classList.remove('hidden');
         document.getElementById('btn-edit-branding').classList.remove('hidden');
@@ -311,23 +357,13 @@ window.handleLogin = function(e) {
         carregarDadosAdmin();
         iniciarAlternativasPadrao();
       } else {
-        if (AppState.concursoToken) {
-          showView('view-quiz');
-        } else {
-          showView('view-participant-home');
-          carregarConcursosHomeUsuario();
-          carregarHistoricoParticipante();
-        }
+        if (AppState.concursoToken) showView('view-quiz');
+        else { showView('view-participant-home'); carregarConcursosHomeUsuario(); carregarHistoricoParticipante(); }
       }
       startPolling();
       toast('Bem-vindo, ' + res.user.Nome + '!', 'success');
     })
-    .withFailureHandler(function(err) {
-      btn.disabled = false;
-      txt.innerText = 'Entrar no Quiz';
-      spinner.classList.add('hidden');
-      toast(err.message || 'Erro ao autenticar', 'error');
-    })
+    .withFailureHandler(function(err) { toast(err.message, 'error'); })
     .apiLogin(email, pass);
 };
 
@@ -341,55 +377,29 @@ window.handleRegister = function(e) {
     senha: document.getElementById('reg-senha').value
   };
 
-  var btn = document.getElementById('btn-reg-submit');
-  var txt = document.getElementById('btn-reg-text');
-  var spinner = document.getElementById('btn-reg-spinner');
-
-  btn.disabled = true;
-  txt.innerText = 'Criando Conta...';
-  spinner.classList.remove('hidden');
-
   google.script.run
     .withSuccessHandler(function(res) {
-      btn.disabled = false;
-      txt.innerText = 'Cadastrar e Participar';
-      spinner.classList.add('hidden');
-
       AppState.sessionToken = res.token;
       AppState.user = res.user;
       localStorage.setItem('QUIZ_TOKEN', res.token);
       localStorage.setItem('QUIZ_USER', JSON.stringify(res.user));
 
       document.getElementById('auth-actions').classList.remove('hidden');
-      if (AppState.concursoToken) {
-        showView('view-quiz');
-      } else {
-        showView('view-participant-home');
-        carregarConcursosHomeUsuario();
-        carregarHistoricoParticipante();
-      }
+      if (AppState.concursoToken) showView('view-quiz');
+      else { showView('view-participant-home'); carregarConcursosHomeUsuario(); carregarHistoricoParticipante(); }
       startPolling();
       toast('Conta criada com sucesso!', 'success');
     })
-    .withFailureHandler(function(err) {
-      btn.disabled = false;
-      txt.innerText = 'Cadastrar e Participar';
-      spinner.classList.add('hidden');
-      toast(err.message || 'Erro ao registrar', 'error');
-    })
+    .withFailureHandler(function(err) { toast(err.message, 'error'); })
     .apiRegister(dados);
 };
 
 window.logout = function() {
   if (AppState.pollingTimer) clearInterval(AppState.pollingTimer);
-
   AppState.sessionToken = null;
   AppState.user = null;
   localStorage.removeItem('QUIZ_TOKEN');
   localStorage.removeItem('QUIZ_USER');
-
-  document.getElementById('login-email').value = '';
-  document.getElementById('login-pass').value = '';
   document.getElementById('auth-actions').classList.add('hidden');
   document.getElementById('btn-admin-nav-voltar').classList.add('hidden');
   document.getElementById('btn-edit-branding').classList.add('hidden');
@@ -398,7 +408,6 @@ window.logout = function() {
   toast('Sessão encerrada.', 'info');
 };
 
-// --- CENTRAL DO PARTICIPANTE ---
 window.carregarConcursosHomeUsuario = function() {
   google.script.run
     .withSuccessHandler(function(lista) {
@@ -428,15 +437,8 @@ window.carregarHistoricoParticipante = function() {
         box.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">Você ainda não possui histórico de concursos anteriores.</p>';
         return;
       }
-
       historico.forEach(function(item) {
-        box.innerHTML += '<div class="p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">' +
-          '<div>' +
-            '<h4 class="text-xs font-extrabold text-slate-800 dark:text-slate-100">' + item.Titulo + '</h4>' +
-            '<p class="text-[11px] text-slate-400 mt-0.5">' + (item.Data_Inicio || '-') + ' • Colocação: <strong class="text-indigo-600 font-bold">' + item.Posicao + 'º Lugar</strong> (' + item.Pontos + ' pts)</p>' +
-          '</div>' +
-          '<button type="button" onclick="abrirModalGabaritoConcurso(\'' + item.ID_Concurso + '\')" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold rounded-xl border border-emerald-200 dark:border-emerald-800 transition">📋 Gabarito</button>' +
-        '</div>';
+        box.innerHTML += '<div class="p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"><div><h4 class="text-xs font-extrabold text-slate-800 dark:text-slate-100">' + item.Titulo + '</h4><p class="text-[11px] text-slate-400 mt-0.5">' + (item.Data_Inicio || '-') + ' • Colocação: <strong class="text-indigo-600 font-bold">' + item.Posicao + 'º Lugar</strong> (' + item.Pontos + ' pts)</p></div><button type="button" onclick="abrirModalGabaritoConcurso(\'' + item.ID_Concurso + '\')" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold rounded-xl border border-emerald-200 dark:border-emerald-800 transition">📋 Gabarito</button></div>';
       });
     })
     .apiGetHistoricoUsuario(AppState.sessionToken);
@@ -448,6 +450,10 @@ window.abrirModalGabaritoConcurso = function(concursoId) {
 };
 
 window.entrarNoConcursoDireto = function(token) {
+  if (AppState.user && AppState.user.Email && AppState.user.Email.indexOf('@backup.com') !== -1) {
+    abrirModalCadastroObrigatorio();
+    return;
+  }
   AppState.concursoToken = token;
   localStorage.setItem('QUIZ_CONCURSO_TOKEN', token);
   showView('view-quiz');
@@ -463,11 +469,9 @@ window.entrarPorTokenManual = function() {
 window.abrirModalCompartilharQR = function() {
   var token = AppState.concursoToken;
   if (!token) return toast('Código do concurso não encontrado.', 'error');
-
   var urlPublica = window.location.href.split('?')[0];
   var linkAcesso = urlPublica + '?concurso=' + token;
   var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=' + encodeURIComponent(linkAcesso);
-
   document.getElementById('share-qr-img').src = qrApiUrl;
   document.getElementById('share-qr-token').innerText = token;
   document.getElementById('modal-compartilhar-qr').classList.remove('hidden');
@@ -485,7 +489,6 @@ window.fecharModalRegrasDesempate = function() {
   document.getElementById('modal-regras-desempate').classList.add('hidden');
 };
 
-// --- SINCRONIZAÇÃO EM TEMPO REAL ---
 window.startPolling = function() {
   if (AppState.pollingTimer) clearInterval(AppState.pollingTimer);
   fetchUpdates();
@@ -530,7 +533,6 @@ window.syncState = function(data) {
     return;
   }
 
-  // VISÃO DO PARTICIPANTE (CELULAR)
   if (concurso.Status === 'Cancelado') {
     document.getElementById('quiz-badge').innerText = 'Cancelado';
     document.getElementById('quiz-badge').className = 'text-[11px] font-bold px-3 py-1 rounded-full bg-rose-50 text-rose-700';
@@ -609,9 +611,6 @@ window.syncState = function(data) {
   }
 };
 
-// =========================================================================
-// --- MODO TELÃO: PROJEÇÃO PARA DATA SHOW / TV (COM REVELAÇÃO NEON) ---
-// =========================================================================
 window.sincronizarModoTelao = function(concurso, questao, stats, timer) {
   if (AppState.isSuperPodioMode) return;
 
@@ -1217,9 +1216,6 @@ window.salvarQuestaoManual = function() {
   }
 };
 
-// =========================================================================
-// --- DASHBOARD: SUPER PÓDIO POR PERÍODO (VISUAL 1º, 2º, 3º + PROJEÇÃO) ---
-// =========================================================================
 window.carregarSuperPodioPeriodo = function() {
   var dtInicio = document.getElementById('filtro-periodo-inicio').value;
   var dtFim = document.getElementById('filtro-periodo-fim').value;
@@ -1294,9 +1290,6 @@ function carregarSuperPodioNoTelao(dtInicio, dtFim) {
     .apiGetSuperPodioTelao(dtInicio, dtFim);
 }
 
-// ==========================================
-// --- COMANDOS DO APRESENTADOR (AO VIVO) ---
-// ==========================================
 window.adminIniciarConcurso = function() {
   if (!AppState.concursoId) return toast('Selecione um concurso para iniciar.', 'error');
   google.script.run
@@ -1372,9 +1365,6 @@ window.adminResetarParaAgendadoAtual = function() {
     .apiAdminResetToScheduled(AppState.sessionToken, AppState.concursoId);
 };
 
-// ==========================================
-// --- CRUD COMPLETO DE USUÁRIOS (ADM) ---
-// ==========================================
 window.abrirModalEditarUsuario = function(userId) {
   var u = AppState.usersList.find(function(item) { return item.ID_Usuario === userId; });
   if (!u) return toast('Usuário não localizado.', 'error');
@@ -1437,9 +1427,6 @@ window.alternarStatusUsuario = function(id, novoStatus) {
     .apiAdminToggleUserStatus(AppState.sessionToken, id, novoStatus);
 };
 
-// ==========================================
-// --- CRUD COMPLETO DE CONCURSOS (ADM) ---
-// ==========================================
 window.abrirModalEditarConcurso = function(concursoId) {
   var c = AppState.concursosList.find(function(item) { return item.ID_Concurso === concursoId; });
   if (!c) return toast('Concurso não localizado.', 'error');
@@ -1519,7 +1506,6 @@ window.adminReativarConcursoAtual = function() {
   reativarConcurso(AppState.concursoId);
 };
 
-// --- CARREGAMENTO DO PAINEL ADM ---
 window.carregarDadosAdmin = function() {
   google.script.run
     .withSuccessHandler(function(lista) {
@@ -1560,7 +1546,6 @@ window.carregarDadosAdmin = function() {
         }
 
         var tempoTxt = c.Tempo_Limite_Segundos > 0 ? (c.Tempo_Limite_Segundos + 's') : 'Manual';
-
         var btnCancelarOuReativar = c.Status === 'Cancelado'
           ? '<button type="button" onclick="reativarConcurso(\'' + c.ID_Concurso + '\')" class="px-2 py-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded text-[10px] font-bold">Reativar</button>'
           : '<button type="button" onclick="cancelarConcurso(\'' + c.ID_Concurso + '\')" class="px-2 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded text-[10px] font-bold">Cancelar</button>';
@@ -1590,7 +1575,6 @@ window.carregarDadosAdmin = function() {
     })
     .apiAdminListConcursos(AppState.sessionToken);
 
-  // Listagem de Usuários
   google.script.run
     .withSuccessHandler(function(users) {
       AppState.usersList = users;
@@ -1609,7 +1593,7 @@ window.carregarDadosAdmin = function() {
           '<td class="p-3 text-right space-x-1">' +
             '<button type="button" onclick="abrirModalEditarUsuario(\'' + u.ID_Usuario + '\')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition">Editar</button>' +
             '<button type="button" onclick="alternarStatusUsuario(\'' + u.ID_Usuario + '\', \'' + (u.Status_Conta === 'Ativo' ? 'Inativo' : 'Ativo') + '\')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition">' + (u.Status_Conta === 'Ativo' ? 'Bloquear' : 'Ativar') + '</button>' +
-            '<button type="button" onclick="deletarUsuario(\'' + u.ID_Usuario + '\')" class="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition">✕</button>' +
+            '<button type="button" onclick="deletarUsuario(\'' + u.ID_Usuario + '\')" class="px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition">✕</button>' +
           '</td>' +
         '</tr>';
       });
@@ -1818,9 +1802,6 @@ window.deletarQuestao = function(id) {
     .apiAdminDeleteQuestao(AppState.sessionToken, id);
 };
 
-// ==========================================
-// --- MODAL QR CODE CENTRALIZADO ---
-// ==========================================
 window.exibirModalQR = function(token, titulo) {
   AppState.selectedConcursoTitulo = titulo;
   var urlPublica = window.location.href.split('?')[0];
@@ -1865,7 +1846,6 @@ window.abrirModoTelao = function() {
   window.open(urlPublica + '?concurso=' + (token || '') + '&view=telao', '_blank');
 };
 
-// --- RELATÓRIOS: PDF & EXCEL RELACIONAL ---
 window.gerarPDF = function() {
   if (!AppState.concursoId) return toast('Selecione um concurso.', 'error');
   toast('Gerando PDF...', 'info');
