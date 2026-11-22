@@ -265,8 +265,8 @@ window.salvarCadastroObrigatorio = function() {
   var igreja = document.getElementById('cad-obrig-igreja').value;
   var senha = document.getElementById('cad-obrig-senha').value;
 
-  if (!email || !senha || senha.length < 4) {
-    return toast('Informe um e-mail válido e uma senha de pelo menos 4 dígitos.', 'error');
+  if (!email || !email.includes('@') || !senha || senha.length < 4) {
+    return toast('Preencha um e-mail válido e uma senha de pelo menos 4 dígitos.', 'error');
   }
 
   var dados = {
@@ -280,10 +280,14 @@ window.salvarCadastroObrigatorio = function() {
     .withSuccessHandler(function() {
       toast('Cadastro concluído com sucesso!', 'success');
       document.getElementById('modal-cadastro-obrigatorio').classList.add('hidden');
+      
+      // Atualiza o cache local para não abrir o modal novamente
       AppState.user.Email = email;
       localStorage.setItem('QUIZ_USER', JSON.stringify(AppState.user));
     })
-    .withFailureHandler(function(err) { toast(err.message, 'error'); })
+    .withFailureHandler(function(err) { 
+      toast(err.message || 'Erro ao salvar cadastro.', 'error'); 
+    })
     .apiAdminUpdateUser(AppState.sessionToken, AppState.user.ID_Usuario, dados);
 };
 
