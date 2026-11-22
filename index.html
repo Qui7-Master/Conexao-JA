@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Quiz Master Pro</title>
   
-  <!-- Injeção dos Parâmetros do Servidor -->
   <script>
     window.SERVER_PARAMS = {};
   </script>
@@ -30,7 +29,7 @@
       }
     };
   </script>
-  
+
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -86,7 +85,7 @@
 
   <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-  <!-- Cabeçalho -->
+  <!-- Cabeçalho Global -->
   <header id="global-header" class="border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md sticky top-0 z-40 px-4 py-3 shadow-xs">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
       <div class="flex items-center space-x-3 cursor-pointer" onclick="voltarParaHome()">
@@ -122,14 +121,13 @@
 
       <div class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800">
         
-        <!-- 3 Abas: Entrar, Acesso Rápido por Nome e Criar Conta -->
         <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6 text-center">
           <button type="button" id="tab-btn-login" onclick="switchAuthTab('login')" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-xs transition">E-mail</button>
           <button type="button" id="tab-btn-quick" onclick="switchAuthTab('quick')" class="flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 transition">Por Nome</button>
           <button type="button" id="tab-btn-register" onclick="switchAuthTab('register')" class="flex-1 py-2 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 transition">Criar Conta</button>
         </div>
 
-        <!-- Formulário 1: Login Normal (E-mail + Senha) -->
+        <!-- Login Por E-mail -->
         <form id="form-login" action="javascript:void(0);" onsubmit="event.preventDefault(); handleLogin(event);" class="space-y-4">
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">E-mail</label>
@@ -148,23 +146,24 @@
           </div>
         </form>
 
-        <!-- Formulário 2: Acesso Rápido por Primeiro Nome -->
+        <!-- Acesso Rápido por Nome (Com Spinner de Loading) -->
         <form id="form-quick" action="javascript:void(0);" onsubmit="event.preventDefault(); handleQuickLogin(event);" class="space-y-4 hidden">
           <div class="p-3 bg-indigo-50/60 dark:bg-slate-800/60 rounded-2xl border border-indigo-100 dark:border-slate-700 text-center">
             <p class="text-xs text-indigo-900 dark:text-indigo-300 font-semibold">
-              ✨ Se você já participou de concursos anteriores ou está na base do evento, digite seu nome abaixo para entrar rapidamente!
+              ✨ Se você já participou de concursos anteriores ou está na base do evento, digite seu nome abaixo para entrar!
             </p>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Primeiro Nome ou Nome Completo</label>
             <input type="text" id="quick-nome" required placeholder="Ex: Natanael ou Erivaldo" class="w-full px-3.5 py-2.5 text-sm rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition">
           </div>
-          <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/25 transition flex items-center justify-center">
-            <span>Acessar pelo Nome</span>
+          <button type="submit" id="btn-quick-submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/25 transition flex items-center justify-center">
+            <span id="btn-quick-text">Acessar pelo Nome</span>
+            <div id="btn-quick-spinner" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           </button>
         </form>
 
-        <!-- Formulário 3: Criar Conta -->
+        <!-- Criar Conta -->
         <form id="form-register" action="javascript:void(0);" onsubmit="event.preventDefault(); handleRegister(event);" class="space-y-3.5 hidden">
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nome Completo</label>
@@ -224,8 +223,18 @@
         </div>
       </div>
 
+      <!-- Filtros por Departamento/Setor na Central -->
       <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-3">
-        <h3 class="text-xs font-black uppercase tracking-wider text-slate-400">Concursos Disponíveis Agora</h3>
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-black uppercase tracking-wider text-slate-400">Concursos Disponíveis</h3>
+          <select id="filtro-departamento-usuario" onchange="carregarConcursosHomeUsuario()" class="text-xs font-bold text-indigo-600 bg-indigo-50 dark:bg-slate-800 px-3 py-1 rounded-xl border border-indigo-200 dark:border-slate-700 outline-none">
+            <option value="TODOS">🏛️ Todos os Setores</option>
+            <option value="Geral">Geral da Igreja</option>
+            <option value="Escola Sabatina">📖 Escola Sabatina</option>
+            <option value="Jovens">⚡ Jovens / JA</option>
+            <option value="Desbravadores">🏕️ Desbravadores</option>
+          </select>
+        </div>
         <div id="lista-concursos-usuario" class="space-y-2.5">
           <p class="text-xs text-slate-400 text-center py-4">Buscando concursos disponíveis...</p>
         </div>
@@ -369,20 +378,27 @@
         </div>
       </div>
 
-      <!-- ABA 2: CONCURSOS -->
+      <!-- ABA 2: CONCURSOS (COM SELETOR DE DEPARTAMENTO E TIMER) -->
       <div id="adm-content-concursos" class="hidden space-y-5">
-        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
-          <h3 class="text-sm font-extrabold mb-3">Criar Novo Concurso</h3>
-          <div class="flex flex-col sm:flex-row gap-2.5">
-            <input type="text" id="novo-concurso-titulo" placeholder="Ex: Grande Quiz Bíblico 2026" class="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-3">
+          <h3 class="text-sm font-extrabold">Criar Novo Concurso</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <input type="text" id="novo-concurso-titulo" placeholder="Ex: Grande Quiz Bíblico 2026" class="px-4 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500">
+            <select id="novo-concurso-departamento" class="px-3 py-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
+              <option value="Geral">🏛️ Geral da Igreja</option>
+              <option value="Escola Sabatina">📖 Escola Sabatina</option>
+              <option value="Jovens">⚡ Jovens / JA</option>
+              <option value="Desbravadores">🏕️ Desbravadores</option>
+              <option value="Outro">🎯 Outro / Personalizado</option>
+            </select>
             <select id="novo-concurso-tempo" class="px-3 py-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none">
               <option value="0">✋ Manual (Sem Timer)</option>
               <option value="30">⏱️ 30 Segundos</option>
               <option value="60">⏱️ 60 Segundos (1 min)</option>
               <option value="120">⏱️ 120 Segundos (2 min)</option>
             </select>
-            <button type="button" onclick="criarNovoConcurso()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-emerald-500/20 transition">Criar Concurso</button>
           </div>
+          <button type="button" onclick="criarNovoConcurso()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition">Criar Concurso</button>
         </div>
 
         <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
@@ -393,9 +409,9 @@
                 <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold">
                   <th class="p-3">ID</th>
                   <th class="p-3">Título</th>
+                  <th class="p-3">Setor</th>
                   <th class="p-3">Tempo</th>
                   <th class="p-3">Status</th>
-                  <th class="p-3">Token</th>
                   <th class="p-3 text-right">Ações</th>
                 </tr>
               </thead>
@@ -509,12 +525,7 @@
       <!-- ABA 4: USUÁRIOS -->
       <div id="adm-content-usuarios" class="hidden space-y-5">
         <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Usuários Inscritos</h3>
-              <p class="text-xs text-slate-400">Edite dados, altere senhas ou gerencie contas</p>
-            </div>
-          </div>
+          <h3 class="text-sm font-extrabold mb-4">Usuários Inscritos</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-left">
               <thead>
@@ -534,7 +545,7 @@
         </div>
       </div>
 
-      <!-- ABA 5: RELATÓRIOS & DASHBOARD COM SUPER PÓDIO VISUAL (CORRIGIDO SEM DISTORÇÃO) -->
+      <!-- ABA 5: RELATÓRIOS & DASHBOARD COM SUPER PÓDIO VISUAL -->
       <div id="adm-content-relatorios" class="hidden space-y-6">
         <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs space-y-5">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -565,12 +576,10 @@
             </div>
           </div>
 
-          <!-- PÓDIO VISUAL BLINDADO CONTRA DISTORÇÃO (LARGURA FIXA E QUEBRA DE TEXTO) -->
+          <!-- PÓDIO VISUAL DOS CAMPEÕES DO PERÍODO -->
           <div id="super-podio-visual-box" class="pt-4 pb-2 border-t border-slate-100 dark:border-slate-800">
             <h4 class="text-xs font-black uppercase text-slate-400 text-center mb-4">🏆 Campeões Acumulados do Período</h4>
             <div class="flex justify-center items-end gap-3 max-w-md mx-auto">
-              
-              <!-- 2º Lugar -->
               <div class="flex flex-col items-center w-28 sm:w-32">
                 <div id="super-podio-2-name" class="text-xs font-bold text-center leading-tight break-words line-clamp-2 h-10 flex items-center justify-center w-full mb-1 text-slate-700 dark:text-slate-300">---</div>
                 <div class="w-full bg-slate-300 dark:bg-slate-700 h-20 rounded-t-2xl flex flex-col justify-center items-center shadow-md border-t-4 border-slate-400">
@@ -578,8 +587,6 @@
                   <span id="super-podio-2-pts" class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">0 pts</span>
                 </div>
               </div>
-
-              <!-- 1º Lugar -->
               <div class="flex flex-col items-center w-32 sm:w-36">
                 <div class="text-amber-400 text-xl animate-bounce mb-0.5">👑</div>
                 <div id="super-podio-1-name" class="text-xs font-bold text-center leading-tight break-words line-clamp-2 h-10 flex items-center justify-center w-full mb-1 text-slate-900 dark:text-white">---</div>
@@ -588,8 +595,6 @@
                   <span id="super-podio-1-pts" class="text-xs font-black">0 pts</span>
                 </div>
               </div>
-
-              <!-- 3º Lugar -->
               <div class="flex flex-col items-center w-28 sm:w-32">
                 <div id="super-podio-3-name" class="text-xs font-bold text-center leading-tight break-words line-clamp-2 h-10 flex items-center justify-center w-full mb-1 text-slate-700 dark:text-slate-300">---</div>
                 <div class="w-full bg-amber-700/60 dark:bg-amber-800 h-16 rounded-t-2xl flex flex-col justify-center items-center shadow border-t-4 border-amber-600">
@@ -597,7 +602,6 @@
                   <span id="super-podio-3-pts" class="text-[11px] font-semibold text-amber-100">0 pts</span>
                 </div>
               </div>
-
             </div>
 
             <div class="text-center pt-4">
@@ -631,7 +635,7 @@
           <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-xs flex flex-col justify-between">
             <div>
               <h4 class="text-sm font-extrabold mb-2">Exportar PDF Oficial</h4>
-              <p class="text-xs text-slate-400 mb-4">Gera ata oficial no Google Drive na pasta Doc_Relatorios.</p>
+              <p class="text-xs text-slate-400 mb-4">Gera ata oficial no Google Drive dentro da pasta Doc_Relatorios.</p>
             </div>
             <button type="button" onclick="gerarPDF()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition">Exportar PDF</button>
           </div>
@@ -658,8 +662,6 @@
 
     <!-- TELA 5: MODO TELÃO (PROJEÇÃO DE PALCO / TV) -->
     <section id="view-projection" class="hidden min-h-[90vh] flex flex-col justify-between py-6 px-4">
-      
-      <!-- FASE 1: SALA DE ESPERA COM QR CODE GIGANTE E CONECTADOS AO VIVO -->
       <div id="telao-fase-espera" class="flex flex-col items-center justify-center text-center space-y-6 my-auto">
         <span class="text-xs font-black uppercase tracking-widest text-indigo-400 bg-indigo-950/80 px-5 py-2 rounded-full border border-indigo-700">
           Apresentação Oficial ao Vivo
@@ -678,7 +680,6 @@
         </div>
       </div>
 
-      <!-- FASE 2: PERGUNTA COM FONTES GIGANTES, GABARITO NEON E CRONÔMETRO -->
       <div id="telao-fase-pergunta" class="hidden space-y-8 my-auto max-w-5xl mx-auto w-full">
         <div class="flex items-center justify-between text-slate-300 font-bold text-sm">
           <span id="telao-pergunta-tema" class="bg-slate-800/80 px-4 py-1.5 rounded-xl border border-slate-700">Tema</span>
@@ -707,7 +708,6 @@
         </div>
       </div>
 
-      <!-- FASE 3: PÓDIO DE PALCO (COM TABELA DOS DEMAIS COLOCADOS ABAIXO) -->
       <div id="telao-fase-podio" class="hidden text-center space-y-6 my-auto max-w-4xl mx-auto w-full">
         <h2 id="telao-podio-titulo" class="text-4xl sm:text-6xl font-black text-white tracking-tight">🏆 Campeões da Rodada</h2>
         
@@ -730,7 +730,6 @@
           </div>
         </div>
       </div>
-
     </section>
 
     <!-- TELA 6: PÓDIO DO PARTICIPANTE -->
@@ -802,9 +801,7 @@
       </div>
     </section>
 
-    <!-- ==================== MODAIS ==================== -->
-
-    <!-- MODAL 1: QR CODE CENTRALIZADO DO ADM -->
+    <!-- MODAIS -->
     <div id="modal-qrcode" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4">
         <h4 class="text-sm font-extrabold text-slate-900 dark:text-white" id="qr-modal-title">QR Code de Entrada</h4>
@@ -819,7 +816,6 @@
       </div>
     </div>
 
-    <!-- MODAL 2: COMPARTILHAR QR CODE COM O COLEGA AO LADO -->
     <div id="modal-compartilhar-qr" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4">
         <span class="text-2xl">📲</span>
@@ -836,7 +832,6 @@
       </div>
     </div>
 
-    <!-- MODAL 3: REGRAS & CRITÉRIOS DE DESEMPATE -->
     <div id="modal-regras-desempate" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -855,7 +850,6 @@
       </div>
     </div>
 
-    <!-- MODAL 4: PERSONALIZAR LOGO E NOME -->
     <div id="modal-branding" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -883,7 +877,6 @@
       </div>
     </div>
 
-    <!-- MODAL 5: PRÉ-VISUALIZAR QUESTÃO CADASTRADA -->
     <div id="modal-ver-questao" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -903,7 +896,6 @@
       </div>
     </div>
 
-    <!-- MODAL 6: EXPLICAÇÃO PEDAGÓGICA -->
     <div id="modal-explicacao" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 text-center">
         <span class="text-3xl">💡</span>
@@ -916,7 +908,6 @@
       </div>
     </div>
 
-    <!-- MODAL 7: EDITAR USUÁRIO -->
     <div id="modal-editar-usuario" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -973,7 +964,6 @@
       </div>
     </div>
 
-    <!-- MODAL 8: EDITAR CONCURSO -->
     <div id="modal-editar-concurso" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -1015,7 +1005,6 @@
       </div>
     </div>
 
-    <!-- MODAL 9: GABARITO SINTÉTICO DO PARTICIPANTE -->
     <div id="modal-gabarito" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[85vh] flex flex-col">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -1032,7 +1021,7 @@
       </div>
     </div>
 
-    <!-- MODAL 10: BARREIRA DE CADASTRO OBRIGATÓRIO (PARA QUEM ENTROU POR NOME DO BACKUP) -->
+    <!-- MODAL BARREIRA DE CADASTRO OBRIGATÓRIO (PARA QUEM ENTROU POR NOME DO BACKUP) -->
     <div id="modal-cadastro-obrigatorio" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-7 shadow-2xl border-2 border-indigo-500/50 space-y-4">
         <div class="text-center space-y-1">
