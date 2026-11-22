@@ -1881,3 +1881,23 @@ window.solicitarMeuRelatorio = function() {
     .withSuccessHandler(function() { toast('Boletim individual enviado para seu e-mail!', 'success'); })
     .apiSendMyReport(AppState.sessionToken, AppState.concursoId);
 };
+
+window.carregarDepartamentos = function() {
+  google.script.run
+    .withSuccessHandler(function(lista) {
+      var selectCriar = document.getElementById('novo-concurso-departamento');
+      var selectFiltro = document.getElementById('filtro-departamento-usuario');
+      
+      // Limpa e repopula os select boxes
+      [selectCriar, selectFiltro].forEach(function(sel) {
+        if (!sel) return;
+        var valorAtual = sel.value;
+        sel.innerHTML = '<option value="Geral">Geral</option>';
+        lista.forEach(function(dep) {
+          sel.innerHTML += '<option value="' + dep + '">' + dep + '</option>';
+        });
+        sel.value = valorAtual;
+      });
+    })
+    .apiGetDepartamentos();
+};
