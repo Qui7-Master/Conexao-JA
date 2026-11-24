@@ -487,9 +487,20 @@ window.fetchUpdates = function() {
 
   google.script.run
     .withSuccessHandler(function(data) { syncState(data); })
+    .withFailureHandler(function(err) {
+      console.error("Erro de sincronização:", err.message);
+      
+      // TRAVA DE SEGURANÇA: Se o erro for de concurso não encontrado, limpa a sessão local
+      if (err.message && err.message.indexOf('não localizado') !== -1) {
+        toast('Concurso não localizado. Redirecionando...', 'error');
+        localStorage.removeItem('QUIZ_CONCURSO_TOKEN');
+        AppState.concursoToken = null;
+        if (AppState.pollingTimer) clearInterval(AppState.pollingTimer);
+        voltarParaHome();
+      }
+    })
     .apiGetConcursoState(AppState.concursoToken, uId);
 };
-
 window.syncState = function(data) {
   var concurso = data.concurso;
   var questao = data.questao;
