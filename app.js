@@ -30,50 +30,31 @@ function callGasApi(action, data) {
 window.google = window.google || {};
 window.google.script = window.google.script || {};
 window.google.script.run = {
-  _success: null,
-  _failure: null,
-  withSuccessHandler: function(cb) {
-    var r = Object.create(window.google.script.run);
-    r._success = cb;
-    return r;
-  },
-  withFailureHandler: function(fcb) {
-    var r = Object.create(this);
-    r._failure = fcb;
-    return r;
-  },
+  _success: null, _failure: null,
+  withSuccessHandler: function(cb) { var r = Object.create(this); r._success = cb; return r; },
+  withFailureHandler: function(fcb) { var r = Object.create(this); r._failure = fcb; return r; },
   _execute: function(action, data) {
     var self = this;
     callGasApi(action, data)
-      .then(function(res) {
-        if (self._success) self._success(res);
-      })
-      .catch(function(err) {
-        if (self._failure) self._failure(err);
-        else {
-          console.error("Erro na API [" + action + "]:", err);
-          if (window.toast) window.toast(err.message, 'error');
-        }
-      });
+      .then(function(res) { if (self._success) self._success(res); })
+      .catch(function(err) { if (self._failure) self._failure(err); else { console.error(err); toast(err.message, 'error'); }});
   },
+  apiLogin: function(e, s) { this._execute('login', { email: e, senha: s }); },
+  apiQuickLogin: function(n) { this._execute('quickLogin', { primeiroNome: n }); },
+  apiRegister: function(d) { this._execute('register', { dados: d }); },
+  apiAdminUpdateUser: function(tok, uId, d) { this._execute('updateUser', { sessionToken: tok, userId: uId, dados: d }); },
   apiGetOrgConfig: function() { this._execute('getOrgConfig', {}); },
   apiSaveOrgConfig: function(tok, cfg) { this._execute('saveOrgConfig', { sessionToken: tok, config: cfg }); },
   apiResetOrgConfig: function(tok) { this._execute('resetOrgConfig', { sessionToken: tok }); },
-  apiLogin: function(email, pass) { this._execute('login', { email: email, senha: pass }); },
-  apiQuickLogin: function(nome) { this._execute('quickLogin', { primeiroNome: nome }); },
-  apiRegister: function(dados) { this._execute('register', { dados: dados }); },
-  apiUpdateUser: function(tok, uId, dados) { this._execute('updateUser', { sessionToken: tok, userId: uId, dados: dados }); },
-  apiForgotPassword: function(email) { this._execute('forgotPassword', { email: email }); },
-  apiResetPassword: function(email, code, newPass) { this._execute('resetPassword', { email: email, code: code, newPass: newPass }); },
   apiGetConcursoState: function(token, userId) { this._execute('getConcursoState', { concursoToken: token, userId: userId }); },
   apiSubmitAnswer: function(tok, cId, qId, ops) { this._execute('submitAnswer', { sessionToken: tok, concursoId: cId, questaoId: qId, opcoesSelecionadas: ops }); },
   apiGetPodio: function(cId) { this._execute('getPodio', { concursoId: cId }); },
   apiGetMeuGabarito: function(tok, cId) { this._execute('getMeuGabarito', { sessionToken: tok, concursoId: cId }); },
   apiGetHistoricoUsuario: function(tok) { this._execute('getHistoricoUsuario', { sessionToken: tok }); },
-  apiGetConcursosAtivosDisponiveis: function() { this._execute('getConcursosAtivos', {}); },
+  apiGetConcursosAtivosDisponiveis: function(dep) { this._execute('getConcursosAtivos', { departamento: dep || 'TODOS' }); },
   apiAdminListConcursos: function(tok) { this._execute('listConcursos', { sessionToken: tok }); },
-  apiAdminCreateConcurso: function(tok, dados) { this._execute('createConcurso', { sessionToken: tok, dados: dados }); },
-  apiAdminUpdateConcurso: function(tok, cId, dados) { this._execute('updateConcurso', { sessionToken: tok, concursoId: cId, dados: dados }); },
+  apiAdminCreateConcurso: function(tok, d) { this._execute('createConcurso', { sessionToken: tok, dados: d }); },
+  apiAdminUpdateConcurso: function(tok, cId, d) { this._execute('updateConcurso', { sessionToken: tok, concursoId: cId, dados: d }); },
   apiAdminDeleteConcurso: function(tok, cId) { this._execute('deleteConcurso', { sessionToken: tok, concursoId: cId }); },
   apiAdminCancelContest: function(tok, cId) { this._execute('cancelContest', { sessionToken: tok, concursoId: cId }); },
   apiAdminReactivateContest: function(tok, cId) { this._execute('reactivateContest', { sessionToken: tok, concursoId: cId }); },
@@ -85,10 +66,10 @@ window.google.script.run = {
   apiAdminToggleReveal: function(tok, cId) { this._execute('toggleReveal', { sessionToken: tok, concursoId: cId }); },
   apiAdminFinishContest: function(tok, cId) { this._execute('finishContest', { sessionToken: tok, concursoId: cId }); },
   apiAdminListQuestoes: function(tok, cId) { this._execute('listQuestoes', { sessionToken: tok, concursoId: cId }); },
-  apiAdminCreateQuestao: function(tok, dados) { this._execute('createQuestao', { sessionToken: tok, dados: dados }); },
-  apiAdminUpdateQuestao: function(tok, qId, dados) { this._execute('updateQuestao', { sessionToken: tok, questaoId: qId, dados: dados }); },
+  apiAdminCreateQuestao: function(tok, d) { this._execute('createQuestao', { sessionToken: tok, dados: d }); },
+  apiAdminUpdateQuestao: function(tok, qId, d) { this._execute('updateQuestao', { sessionToken: tok, questaoId: qId, dados: d }); },
   apiAdminDeleteQuestao: function(tok, qId) { this._execute('deleteQuestao', { sessionToken: tok, questaoId: qId }); },
-  apiGenerateQuestionsAI: function(tok, params) { this._execute('generateQuestionsAI', { sessionToken: tok, params: params }); },
+  apiGenerateQuestionsAI: function(tok, p) { this._execute('generateQuestionsAI', { sessionToken: tok, params: p }); },
   apiAdminListUsers: function(tok) { this._execute('listUsers', { sessionToken: tok }); },
   apiAdminDeleteUser: function(tok, uId) { this._execute('deleteUser', { sessionToken: tok, userId: uId }); },
   apiAdminToggleUserStatus: function(tok, uId, st) { this._execute('toggleUserStatus', { sessionToken: tok, userId: uId, novoStatus: st }); },
@@ -97,7 +78,8 @@ window.google.script.run = {
   apiExportPDF: function(tok, cId) { this._execute('exportPDF', { sessionToken: tok, concursoId: cId }); },
   apiExportExcel: function(tok, cId) { this._execute('exportExcel', { sessionToken: tok, concursoId: cId }); },
   apiNotifyAbsentees: function(tok, cId) { this._execute('notifyAbsentees', { sessionToken: tok, concursoId: cId }); },
-  apiSendMyReport: function(tok, cId) { this._execute('sendMyReport', { sessionToken: tok, concursoId: cId }); }
+  apiSendMyReport: function(tok, cId) { this._execute('sendMyReport', { sessionToken: tok, concursoId: cId }); },
+  apiGetDepartamentos: function() { this._execute('getDepartamentos', {}); }
 };
 
 window.AppState = {
