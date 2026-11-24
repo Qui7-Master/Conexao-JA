@@ -8,7 +8,7 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYk
 
 function callGasApi(action, data) {
   if (!GAS_API_URL || GAS_API_URL.indexOf('/exec') === -1 || GAS_API_URL.indexOf('SUA_URL') !== -1) {
-    var msg = "⚠️ ATENÇÃO: Configure a variável GAS_API_URL na linha 11 do arquivo app.js com a sua URL do Apps Script (/exec)!";
+    var msg = "https://script.google.com/macros/s/AKfycbxKNKiHEqCF6-WE_YYkPlCZKviLntPCC2PmbZRSQNu54DJjiTqd2r8bskAuxKRKmxB2Zw/exec";
     alert(msg);
     throw new Error(msg);
   }
