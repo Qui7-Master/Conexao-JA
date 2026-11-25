@@ -255,7 +255,8 @@ window.salvarCadastroObrigatorio = function() {
     Email: email,
     Telefone: tel,
     Igreja_Unidade: igreja,
-    NovaSenha: senha
+    NovaSenha: senha,
+    Tipo_Cadastro: COMPLETO // Define que agora ele é um usuário oficial
   };
 
   google.script.run
