@@ -256,7 +256,7 @@ window.salvarCadastroObrigatorio = function() {
     Telefone: tel,
     Igreja_Unidade: igreja,
     NovaSenha: senha,
-    Tipo_Cadastro: COMPLETO // Define que agora ele é um usuário oficial
+    Tipo_Cadastro: 'COMPLETO' // <--- AQUI ESTÁ A CORREÇÃO: COM AS ASPAS
   };
 
   google.script.run
@@ -264,7 +264,7 @@ window.salvarCadastroObrigatorio = function() {
       toast('Cadastro concluído com sucesso!', 'success');
       document.getElementById('modal-cadastro-obrigatorio').classList.add('hidden');
       
-      // Atualiza o cache local para não abrir o modal novamente
+      // Atualiza o cache local para liberar o acesso
       AppState.user.Email = email;
       localStorage.setItem('QUIZ_USER', JSON.stringify(AppState.user));
     })
